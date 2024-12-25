@@ -55,6 +55,9 @@ THRESHOLD_COUNT = int(os.getenv('THRESHOLD_COUNT', '5'))  # 触发禁用IP的次
 def check_ip_whitelisted(ip):
     try:
         for network in WHITELIST:
+            # 如果是单独的IP地址，转换为网络格式
+            if '/' not in network:
+                network = f"{network}/32"
             if ipaddress.ip_address(ip) in ipaddress.ip_network(network, strict=False):
                 logger.info(f"Whitelisted IP: {ip}")
                 return True
@@ -81,6 +84,13 @@ def execute_script(ip):
 
 
 def update_ban_list(ip):
+    if not ip:
+        logger.error("Attempted to ban an empty IP address. Skipping.")
+        return
+
+    # 确保BAN_FILE_PATH目录存在
+    os.makedirs(os.path.dirname(BAN_FILE_PATH), exist_ok=True)
+
     today_date = datetime.now().strftime("%Y-%m-%d")
     found = False
     updated_content = []
@@ -128,7 +138,10 @@ def analyze_log():
     time_threshold = now - timedelta(minutes=CHECK_INTERVAL)
     logger.info(f"Analyzing logs after {time_threshold}")
 
-    pattern = re.compile(r'^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) \[.*?\] \[.*?\] \[.*?\] \[(.*?)\] .*? \[(.*?):')
+    # 更精确的正则表达式，专门匹配IP地址
+    pattern = re.compile(
+        r'^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) \[.*?\] \[.*?\] \[.*?\] \[(.*?)\] .*? \[(\d{1,3}(?:\.\d{1,3}){3}):'
+    )
 
     ip_counter = defaultdict(int)  # 记录IP出现次数
 
