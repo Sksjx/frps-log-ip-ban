@@ -42,7 +42,7 @@ foreach ($entry in $ipAddresses) {
             New-NetFirewallRule -DisplayName "$ruleName" -Direction Inbound -Action Block -RemoteAddress $entry.IP -Profile Any -Description $(if ($entry.Date) { $entry.Date.ToString("yyyy-MM-dd") } else { "" })
             Write-Output "Added new rule for IP '$($entry.IP)'."
         } else {
-            $daysLeft = ($entry.Date - (Get-Date)).Days
+            $daysLeft = ($entry.Date.AddDays(30) - (Get-Date)).Days
             if ($daysLeft -gt 0) {
                 Write-Output "Rule '$ruleName' already exists. Only $daysLeft days left until release."
             } elseif ($daysLeft -eq 0) {
