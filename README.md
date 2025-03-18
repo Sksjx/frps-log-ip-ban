@@ -1,12 +1,17 @@
-
+# Fork
+- 本程序由[zsanjin-p/frps-log-ip-ban](https://github.com/zsanjin-p/frps-log-ip-ban)修改而来
+# 改动
+- 使用json库代替dotenv库,好处是本程序现在可以在白板python下运行,所有依赖库都是python自带库,且防止了环境变量可能造成的bug
+- 将特征检测改为手动配置
+- 修复了原程序中正则表达式匹配失效的情况
+- 增加了python未被配置到环境变量的情况
 # FRPS 日志 IP 封禁工具
 
 此工具旨在增强 FRP (Fast Reverse Proxy) 的安全性，通过监控 FRPS 日志文件，自动封禁频繁尝试连接的异常 IP 地址。
 
 ## 功能特性
-- 在frp 0.52-0.60测试通过，只要frp不改动当前（0.60版本）的日志格式都能适用[Issue #3](https://github.com/zsanjin-p/frps-log-ip-ban/issues/3)
-
-- 自动监控 FRPS 日志文件。
+- 在frp 0.61.2测试通过，如果日志格式改动的话请修改[frpbanip.py](https://github.com/Sksjx/frps-log-ip-ban/blob/main/banip.py)的第156-158行的正则表达式来重新匹配
+- 自动监控 FRPS 日志文件(注:请参照[frpc_full_example.toml](https://github.com/fatedier/frp/blob/dev/conf/frpc_full_example.toml)中前25行来启用frps的日志)。
 - 根据配置的时间阈值和尝试次数自动封禁异常 IP。
 - 支持设置白名单 IP。
 - 封禁的 IP 地址会记录并在设定时间后自动解封。
@@ -20,15 +25,18 @@
    git clone https://github.com/zsanjin-p/frps-log-ip-ban
    ```
 
-2. 修改 `.env` 环境变量文件，根据您的环境配置以下变量：
+2. 修改 `config.json` 环境变量文件(用UTF-8打开)，根据您的环境配置以下变量：
 
-   - `LOG_FILE_PATH`: FRPS 日志文件路径。
-   - `TARGET_NAMES`: 目标连接名称标记内容，逗号分隔。
-   - `WHITELIST`: IP 白名单，逗号分隔。
-   - `BAN_FILE_PATH`: 被禁 IP 的文件路径。
-   - `EXECUTE_PATH`: 检测到被禁 IP 时要执行的脚本或程序路径。
-   - `CHECK_INTERVAL`: 检查日志文件的时间间隔（分钟）。
-   - `THRESHOLD_COUNT`: 触发禁用 IP 的次数阈值。
+   - `LOG_FILE_PATH` : FRPS 日志文件路径。
+   - `TARGET_NAME` : 在日志中表示frps开始服务的标志
+   - `WHITELIST` : 白名单ip,支持单个ip如0.0.0.0和网段如1.2.3.4/32
+   - `BAN_FILE_PATH` : 储存封禁ip的文件路径
+   - `PYTHON_PATH` : python运行环境路径,如果环境变量中有python的话,此次直接填python即可,反之则填写python.exe的绝对路径
+   - `EXECUTE_PATH` : windows下请填写banip.ps1的绝对路径,linux下请填写banip.py的绝对路径
+   - `CHECK_INTERVAL` : 
+   - `THRESHOLD_COUNT` : 如果一个ip在 CHECK_INTERVAL 分钟内,尝试连接了 THRESHOLD_COUNT 次,则判定为异常
+   - `ANALIZE_TOTLE_LOG` : 是否追溯检查整个log文件,1为是,0为否
+   - `CHECK_FREQUENCY` : 每 CHECK_FREQUENCY 分钟,程序检测一次日志
 
 3. 根据您的操作系统选择对应的封禁 IP 脚本：
 
@@ -40,16 +48,16 @@
 ### Windows
 
 1. 修改 `banip.ps1` 脚本，设置黑名单文件路径和封禁天数（默认为当天往前数30天）。
-黑名单文件所在的位置：必改，大概在第10行左右，banip.ps1脚本默认为C:\\Users\\Administrator\\Desktop\\banip\\frplog\\banip.txt
-封禁天数：把banip.ps1大概第6行$thresholdDate = (Get-Date).AddDays(-30)改为$thresholdDate = (Get-Date).AddDays(-99999)或者$thresholdDate = (Get-Date).AddDays(-30)改为$thresholdDate = (Get-Date).AddDays(99999)
+黑名单文件所在的位置：必改，大概在第7行左右，banip.ps1脚本默认为C:\Users\Administrator\Desktop\frps-log-ip-ban-main\banip.txt
+封禁天数：把banip.ps1大概第4行$thresholdDate = (Get-Date).AddDays(-30)改为$thresholdDate = (Get-Date).AddDays(-99999)或者$thresholdDate = (Get-Date).AddDays(-30)改为$thresholdDate = (Get-Date).AddDays(99999)
 
 2. 点击运行frpbanip.py即可。
 
 3. 创建批处理文件 `.bat` 并通过计划任务程序可设置开机启动：
    ```bat
    @echo off
-   cd C:\Users\Administrator\Desktop\banip\frplog
-   C:\Path\To\Python\python.exe frpbanip.py
+   cd C:\Users\Administrator\Desktop\frps-log-ip-ban-main\
+   python frpbanip.py
    ```
 
 ### Linux
@@ -84,10 +92,6 @@ WantedBy=multi-user.target
    sudo systemctl start frpbanip
    sudo systemctl enable frpbanip
    ```
-
-
-*注意目前有一种难以防范的情况：比如设置了5分钟检查一次日志，你的远程桌面设置为10分钟内密码错误5次则锁定10分钟，然而在某个5分钟内连续有大量的ip在爆破，而本检测封禁脚本并未到检测时间，这时候你使用远程桌面时会发现被锁，不过根据你远程桌面的设置，10分钟后即可使用，同时那些爆破的ip也被封禁了。这种情况比较少见，除非你泄露了ip被轮了，可以通过缩短检测封禁时间和缩短远程桌面锁定时间来解决问题。
-
 
 ## 许可证
 
