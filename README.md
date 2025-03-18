@@ -22,7 +22,7 @@
 
 1. 克隆仓库或下载项目文件。
    ```
-   git clone https://github.com/zsanjin-p/frps-log-ip-ban
+   git clone https://github.com/Sksjx/frps-log-ip-ban
    ```
 
 2. 修改 `config.json` 环境变量文件(用UTF-8打开)，根据您的环境配置以下变量：
