@@ -66,7 +66,7 @@
 黑名单文件所在的位置：必改，大概在第9行左右，banip.py脚本默认为/root/firewall/banipufw/banip.txt
 封禁天数：把banip.py大概第6行threshold_date = (datetime.datetime.now() - datetime.timedelta(days=30)).strftime('%Y-%m-%d')改为threshold_date = (datetime.datetime.now() - datetime.timedelta(days=99999)).strftime('%Y-%m-%d')
 
-2. 输入命令 `pyhton frpbanip.py` 即可运行。
+2. 输入命令 `python frpbanip.py` 即可运行。
 
 3. 创建 Systemd 服务文件 `/etc/systemd/system/frpbanip.service`，将下面内容添加进去，注意修改 Python 路径和工作目录路径。
 
