@@ -10,7 +10,7 @@
 此工具旨在增强 FRP (Fast Reverse Proxy) 的安全性，通过监控 FRPS 日志文件，自动封禁频繁尝试连接的异常 IP 地址。
 
 ## 功能特性
-- 在frp 0.61.2测试通过，如果日志格式改动的话请修改[frpbanip.py](https://github.com/Sksjx/frps-log-ip-ban/blob/main/banip.py)的第156-158行的正则表达式来重新匹配
+- 在frp 0.61.2测试通过，如果日志格式改动的话请修改[frpbanip.py](https://github.com/Sksjx/frps-log-ip-ban/blob/main/frpbanip.py)的第156-158行的正则表达式来重新匹配
 - 自动监控 FRPS 日志文件(注:请参照[frpc_full_example.toml](https://github.com/fatedier/frp/blob/dev/conf/frpc_full_example.toml)中前25行来启用frps的日志)。
 - 根据配置的时间阈值和尝试次数自动封禁异常 IP。
 - 支持设置白名单 IP。
