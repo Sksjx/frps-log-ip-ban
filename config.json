@@ -1,0 +1,12 @@
+{
+    "LOG_FILE_PATH":"C:\\Users\\Administrator\\Desktop\\frps.log",
+    "TARGET_NAME":"new proxy",
+    "WHITELIST":"0.0.0.0;127.0.0.1/32",
+    "BAN_FILE_PATH":"C:\\Users\\Administrator\\Desktop\\frps-log-ip-ban-main\\banip.txt",
+    "PYTHON_PATH":"python",
+    "EXECUTE_PATH":"C:\\Users\\Administrator\\Desktop\\frps-log-ip-ban-main\\banip.ps1",
+    "CHECK_INTERVAL":"30",
+    "THRESHOLD_COUNT":"5",
+    "CHECK_FREQUENCY":"2",
+    "ANALIZE_TOTLE_LOG":"1"
+}

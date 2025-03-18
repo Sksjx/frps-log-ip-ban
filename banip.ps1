@@ -1,13 +1,10 @@
-# 获取所有名为 "ban ip *" 的防火墙规则
 $allRules = Get-NetFirewallRule | Where-Object { $_.DisplayName -like "ban ip *" }
 Write-Output "Total ban ip rules found: $($allRules.Count)"
 
-# 获取当前日期前30天的日期
 $thresholdDate = (Get-Date).AddDays(-30)
 Write-Output "Threshold date for rule expiration: $thresholdDate"
 
-# 读取文本文件中的IP地址和日期
-$filePath = "C:\Users\Administrator\Desktop\banip\frplog\banip.txt"
+$filePath = "C:\Users\Administrator\Desktop\banip.txt"
 $ipAddresses = Get-Content $filePath | ForEach-Object {
     if ($_ -match "^\s*(\d{1,3}(\.\d{1,3}){3})\s*(\d{4}-\d{2}-\d{2})") {
         [PSCustomObject]@{
@@ -18,7 +15,6 @@ $ipAddresses = Get-Content $filePath | ForEach-Object {
 } | Group-Object IP | ForEach-Object { $_.Group | Select-Object -First 1 }  # Eliminate duplicates from the input file
 Write-Output "IPs and dates loaded from file: $($ipAddresses.Count)"
 
-# 删除过时的规则
 foreach ($ip in $ipAddresses) {
     Write-Output "Checking rules for IP: $($ip.IP) with date: $($ip.Date)"
     if ($ip.Date -lt $thresholdDate) {
@@ -32,7 +28,6 @@ foreach ($ip in $ipAddresses) {
         }
     }
 }
-# 添加新的IP封禁规则，避免重复
 foreach ($entry in $ipAddresses) {
     if (-not $entry.Date -or $entry.Date -ge $thresholdDate) {
         $ruleName = "ban ip $($entry.IP)"
@@ -42,7 +37,7 @@ foreach ($entry in $ipAddresses) {
             New-NetFirewallRule -DisplayName "$ruleName" -Direction Inbound -Action Block -RemoteAddress $entry.IP -Profile Any -Description $(if ($entry.Date) { $entry.Date.ToString("yyyy-MM-dd") } else { "" })
             Write-Output "Added new rule for IP '$($entry.IP)'."
         } else {
-            $daysLeft = ($entry.Date.AddDays(30) - (Get-Date)).Days
+            $daysLeft = ($entry.Date.AddDays(99999) - (Get-Date)).Days
             if ($daysLeft -gt 0) {
                 Write-Output "Rule '$ruleName' already exists. Only $daysLeft days left until release."
             } elseif ($daysLeft -eq 0) {
@@ -53,5 +48,3 @@ foreach ($entry in $ipAddresses) {
         }
     }
 }
-
-
