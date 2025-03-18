@@ -4,7 +4,7 @@ Write-Output "Total ban ip rules found: $($allRules.Count)"
 $thresholdDate = (Get-Date).AddDays(-30)
 Write-Output "Threshold date for rule expiration: $thresholdDate"
 
-$filePath = "C:\Users\Administrator\Desktop\banip.txt"
+$filePath = "C:\Users\Administrator\Desktop\frps-log-ip-ban-main\banip.txt"
 $ipAddresses = Get-Content $filePath | ForEach-Object {
     if ($_ -match "^\s*(\d{1,3}(\.\d{1,3}){3})\s*(\d{4}-\d{2}-\d{2})") {
         [PSCustomObject]@{
@@ -37,7 +37,7 @@ foreach ($entry in $ipAddresses) {
             New-NetFirewallRule -DisplayName "$ruleName" -Direction Inbound -Action Block -RemoteAddress $entry.IP -Profile Any -Description $(if ($entry.Date) { $entry.Date.ToString("yyyy-MM-dd") } else { "" })
             Write-Output "Added new rule for IP '$($entry.IP)'."
         } else {
-            $daysLeft = ($entry.Date.AddDays(99999) - (Get-Date)).Days
+            $daysLeft = ($entry.Date.AddDays(30) - (Get-Date)).Days
             if ($daysLeft -gt 0) {
                 Write-Output "Rule '$ruleName' already exists. Only $daysLeft days left until release."
             } elseif ($daysLeft -eq 0) {
