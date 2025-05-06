@@ -4,6 +4,7 @@
     "WHITELIST":"0.0.0.0;127.0.0.1/32",
     "BAN_FILE_PATH":"C:\\Users\\Administrator\\Desktop\\frps-log-ip-ban-main\\banip.txt",
     "PYTHON_PATH":"python",
+    "REMOTE_IP_NAME":"远程 IP",
     "EXECUTE_PATH":"C:\\Users\\Administrator\\Desktop\\frps-log-ip-ban-main\\banip.ps1",
     "CHECK_INTERVAL":"30",
     "THRESHOLD_COUNT":"5",
