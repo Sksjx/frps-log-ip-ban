@@ -47,6 +47,7 @@ TARGET_NAME = config['TARGET_NAME']
 WHITELIST = config['WHITELIST'].split(';') # 白名单ip地址
 BAN_FILE_PATH = config['BAN_FILE_PATH'] # 黑名单ip的储存位置
 PYTHON_PATH = config['PYTHON_PATH'] # python环境位置
+REMOTE_IP_NAME = config['REMOTE_IP_NAME']
 EXECUTE_PATH = config['EXECUTE_PATH'] # banip.ps1文件的绝对地址
 CHECK_INTERVAL = int(config['CHECK_INTERVAL'])
 THRESHOLD_COUNT = int(config['THRESHOLD_COUNT'])
@@ -56,6 +57,64 @@ CHECK_FREQUENCY = int(config['CHECK_FREQUENCY']) # 程序每CHECK_FREQUENCY分�
 check_range = 0 # analyze_log中本次检测范围由log文件中第check_range行至末尾为止
 print(check_range)
 #---------变量配置--------------
+def update_firewall_rule(ip_address): #更新防火墙规则
+    rule_name = "Block IP"
+    # 获取现有规则的详细信息
+    try:
+        # 先查看当前规则中的 remoteip 参数
+        result = subprocess.run(['netsh', 'advfirewall', 'firewall', 'show', 'rule', f'name={rule_name}'],capture_output=True, text=True, check=True)
+        # 获取已有的 remoteip 地址
+    except subprocess.CalledProcessError: # 防火墙中没有Block IP规则
+        command = [
+            "netsh", "advfirewall", "firewall", "add", "rule",
+            "name=Block IP",
+            "dir=in",
+            "action=block",
+            "protocol=TCP",
+            "localport=8100",
+            f"remoteip={ip_address}",
+            "profile=any",
+            "enable=yes"
+        ]
+        subprocess.run(command, check=True)
+        print(f"New rules applied: Blocked {ip_address}")
+        return
+    
+    output = result.stdout
+    start = output.find(REMOTE_IP_NAME)  # 查找 "RemoteIP" 字段位置
+    if start != -1:
+        # 获取 RemoteIP 后面的地址列表
+        remoteip = output[start:].splitlines()[0].split(':')[1].strip()
+    else:
+        remoteip = ""
+    
+    # 如果规则中已经有 IP 地址，添加新的 IP 到现有的 remoteip 地址列表
+    if remoteip:
+        ip_list = remoteip.split(',')
+        if ip_address not in ip_list:
+            ip_list.append(ip_address)  # 添加新 IP 地址
+        new_remoteip = ','.join(ip_list)
+    else:
+        new_remoteip = ip_address  # 如果没有地址，直接设置新 IP 地址
+
+    # 删除现有规则
+    subprocess.run(['netsh', 'advfirewall', 'firewall', 'delete', 'rule', f'name={rule_name}'])
+    
+    # 重新添加规则（包含新的 IP 地址）
+    command = [
+        'netsh', 'advfirewall', 'firewall', 'add', 'rule',
+        f'name={rule_name}',  # 规则名称
+        'dir=in',  # 入站规则
+        'action=block',  # 阻止访问
+        'protocol=TCP',  # 协议
+        f'remoteip={new_remoteip}',  # 更新后的 IP 地址
+        'enable=yes',  # 启用规则
+        'profile=any'  # 明确指定适用的配置文件
+    ]
+    
+    subprocess.run(command, check=True)
+    print(f"规则已更新：阻止 IP {new_remoteip} 对 TCP 访问")
+
 def check_ip_whitelisted(ip): # 检查ip是否存在于白名单内
     try:
         for network in WHITELIST:
@@ -72,19 +131,16 @@ def check_ip_whitelisted(ip): # 检查ip是否存在于白名单内
 
 def execute_script(ip):
     script_extension = os.path.splitext(EXECUTE_PATH)[-1].lower()
-    if script_extension == '.ps1': # 如果在linux系统,则用户设置EXECUTE_PATH为banip.ps1的路径,后缀为.ps1
-        command = ["powershell.exe", "-File", EXECUTE_PATH, ip]
-    elif script_extension == '.py': # 如果在linux系统,则用户设置EXECUTE_PATH为banip.py的路径,后缀为.py
+    if script_extension == '.py': # 如果在linux系统,则用户设置EXECUTE_PATH为banip.py的路径,后缀为.py
         # 假设Python脚本需要以命令行参数的形式接收IP地址
         command = [PYTHON_PATH, EXECUTE_PATH, ip]
+        try:
+            subprocess.run(command, check=True)
+            logger.info(f"Executed script for IP {ip}")
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Failed to execute script for IP {ip}: {e}")
     else:
-        command = [EXECUTE_PATH, ip]
-
-    try:
-        subprocess.run(command, check=True)
-        logger.info(f"Executed script for IP {ip}")
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Failed to execute script for IP {ip}: {e}")
+        update_firewall_rule(ip) # windows平台下直接执行
 
 
 def update_ban_list(ip): # 更新黑名单
