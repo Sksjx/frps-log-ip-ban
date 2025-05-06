@@ -2,15 +2,17 @@
 - 本程序由[zsanjin-p/frps-log-ip-ban](https://github.com/zsanjin-p/frps-log-ip-ban)修改而来
 # 改动
 - 使用json库代替dotenv库,好处是本程序现在可以在白板python下运行,所有依赖库都是python自带库,且防止了环境变量可能造成的bug
+- 将ps1脚本的功能改为用python执行
 - 将特征检测改为手动配置
 - 修复了原程序中正则表达式匹配失效的情况
 - 增加了python未被配置到环境变量的情况
+
 # FRPS 日志 IP 封禁工具
 
 此工具旨在增强 FRP (Fast Reverse Proxy) 的安全性，通过监控 FRPS 日志文件，自动封禁频繁尝试连接的异常 IP 地址。
 
 ## 功能特性
-- 在frp 0.61.2测试通过，如果日志格式改动的话请修改[frpbanip.py](https://github.com/Sksjx/frps-log-ip-ban/blob/main/frpbanip.py)的第156-158行的正则表达式来重新匹配
+- 在frp 0.61.2测试通过，如果日志格式改动的话请修改[frpbanip.py](https://github.com/Sksjx/frps-log-ip-ban/blob/main/frpbanip.py)的第212-214行的正则表达式来重新匹配
 - 自动监控 FRPS 日志文件(注:请参照[frpc_full_example.toml](https://github.com/fatedier/frp/blob/dev/conf/frpc_full_example.toml)中前25行来启用frps的日志)。
 - 根据配置的时间阈值和尝试次数自动封禁异常 IP。
 - 支持设置白名单 IP。
@@ -22,7 +24,7 @@
 
 1. 克隆仓库或下载项目文件。
    ```
-   git clone https://github.com/Sksjx/frps-log-ip-ban
+   git clone https://github.com/zsanjin-p/frps-log-ip-ban
    ```
 
 2. 修改 `config.json` 环境变量文件(用UTF-8打开)，根据您的环境配置以下变量：
@@ -32,28 +34,25 @@
    - `WHITELIST` : 白名单ip,支持单个ip如0.0.0.0和网段如1.2.3.4/32
    - `BAN_FILE_PATH` : 储存封禁ip的文件路径
    - `PYTHON_PATH` : python运行环境路径,如果环境变量中有python的话,此次直接填python即可,反之则填写python.exe的绝对路径
+   - `REMOTE_IP_NAME`: 如果你是中文系统,那么改为"远程 IP",英语系统则为"Remote IP"。如果不清楚的话可以运行subprocess.run(['netsh', 'advfirewall', 'firewall', 'show', 'rule', name="Block IP"])看看
    - `EXECUTE_PATH` : windows下请填写banip.ps1的绝对路径,linux下请填写banip.py的绝对路径
-   - `CHECK_INTERVAL` : 
-   - `THRESHOLD_COUNT` : 如果一个ip在 CHECK_INTERVAL 分钟内,尝试连接了 THRESHOLD_COUNT 次,则判定为异常
+   - `CHECK_INTERVAL & THRESHOLD_COUNT` : 如果一个ip在 CHECK_INTERVAL 分钟内,尝试连接了 THRESHOLD_COUNT 次,则判定为异常
    - `ANALIZE_TOTLE_LOG` : 是否追溯检查整个log文件,1为是,0为否
    - `CHECK_FREQUENCY` : 每 CHECK_FREQUENCY 分钟,程序检测一次日志
 
 3. 根据您的操作系统选择对应的封禁 IP 脚本：
 
-   - Windows: `banip.ps1`
    - Linux (宝塔面板UFW): `banip.py`
-
+   - windows: ` `(留空)
+   由于原作者的.ps1脚本无法运行且不知运行原理,所以目前采用subprocess模块重写了这部分的功能
 ## 配置和使用
 
 ### Windows
 
-1. 修改 `banip.ps1` 脚本，设置黑名单文件路径和封禁天数（默认为当天往前数30天）。
-黑名单文件所在的位置：必改，大概在第7行左右，banip.ps1脚本默认为C:\Users\Administrator\Desktop\frps-log-ip-ban-main\banip.txt
-封禁天数：把banip.ps1大概第4行$thresholdDate = (Get-Date).AddDays(-30)改为$thresholdDate = (Get-Date).AddDays(-99999)或者$thresholdDate = (Get-Date).AddDays(-30)改为$thresholdDate = (Get-Date).AddDays(99999)
+1. 修改上述的.env文件
 
-2. 点击运行frpbanip.py即可。
-
-3. 创建批处理文件 `.bat` 并通过计划任务程序可设置开机启动：
+2. 管理员运行frpbanip.py即可
+   注: 创建批处理文件 `.bat` 并通过计划任务程序可设置开机启动：
    ```bat
    @echo off
    cd C:\Users\Administrator\Desktop\frps-log-ip-ban-main\
